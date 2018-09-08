@@ -37,20 +37,20 @@ public class BlogService {
 	// Lambda functionss for routes
 
 	Route homePageRoute = (req,res)->{
-		String result = "<p>This is a RESTFul API for blog posts</p>\n" + getRoutesAsHTMLTable() + "\n";		
+		String result = "<p>This is a RESTFul API for places</p>\n" + getRoutesAsHTMLTable() + "\n";		
 		return result;
 	};
 
-	private Route newPostRoute =
+	private Route newPlaceRoute =
 		(request, response) -> {
 		try {
-			Post p = json2Post(request.body());
+			Place p = json2Place(request.body());
 			if (p==null) {
 				response.status(HTTP_BAD_REQUEST);
 				return "\n";
 			}
 			
-			int id = model.createPost(p);
+			int id = model.createPlace(p);
 			response.status(200);
 			response.type("application/json");
 			return id+"\n";
@@ -60,32 +60,32 @@ public class BlogService {
 		}
 	};
 
-	private Route getAllPostsRoute = (request, response) -> {
+	private Route getAllPlacesRoute = (request, response) -> {
 		response.status(200);
 		response.type("application/json");
-		return dataToJson(model.getAllPosts()) + "\n";
+		return dataToJson(model.getAllPlaces()) + "\n";
 	};
 
 
-	private Route getPostRoute = (request, response) -> {
+	private Route getPlaceRoute = (request, response) -> {
 		response.status(200);
 		response.type("application/json");
-		Post p = model.getPost(request.params(":id"));
+		Place p = model.getPlace(request.params(":id"));
 		return dataToJson(p) + "\n";				
 	};
 
-	private Route deletePostRoute = (request, response) -> {
+	private Route deletePlaceRoute = (request, response) -> {
 		response.status(200); // TODO: Should it be something else if :id not found?
 		response.type("application/json");
-		boolean result = model.deletePost(request.params(":id"));
+		boolean result = model.deletePlace(request.params(":id"));
 		return (result?"true":"false")+"\n";
 	};
 
-	private Route updatePostRoute = (request, response) -> {
-		Post p = json2Post(request.body());
+	private Route updatePlaceRoute = (request, response) -> {
+		Place p = json2Place(request.body());
 		response.status(200); // TODO: Should it be something else if :id not found?
 		response.type("application/json");
-		Model.PostUpdateResult result = model.updatePost(request.params(":id"),p);
+		Model.PlaceUpdateResult result = model.updatePlace(request.params(":id"),p);
 		return dataToJson(result)+"\n";
 	};
 
@@ -113,11 +113,11 @@ public class BlogService {
 	public BlogService(String databaseUri) {		
 		model = new Model(databaseUri);
 		this.routeEntries.add(new RouteEntry("GET","/", homePageRoute, "home page that describes the API"));
-		this.routeEntries.add(new RouteEntry("GET","/posts", getAllPostsRoute, "get all Posts"));
-		this.routeEntries.add(new RouteEntry("POST","/posts", newPostRoute, "add a new Post"));
-		this.routeEntries.add(new RouteEntry("GET","/posts/:id", getPostRoute, "get Post with id <code>:id</code>"));
-		this.routeEntries.add(new RouteEntry("PUT","/posts/:id",updatePostRoute, "update Post with id <code>:id</code>"));
-		this.routeEntries.add(new RouteEntry("DELETE","/posts/:id",deletePostRoute, "delete Post with id <code>:id</code>"));
+		this.routeEntries.add(new RouteEntry("GET","/places", getAllPlacesRoute, "get all Places"));
+		this.routeEntries.add(new RouteEntry("POST","/places", newPlaceRoute, "add a new Place"));
+		this.routeEntries.add(new RouteEntry("GET","/places/:id", getPlaceRoute, "get Place with id <code>:id</code>"));
+		this.routeEntries.add(new RouteEntry("PUT","/places/:id",updatePlaceRoute, "update Place with id <code>:id</code>"));
+		this.routeEntries.add(new RouteEntry("DELETE","/places/:id",deletePlaceRoute, "delete Place with id <code>:id</code>"));
 		
 		setUpRoutes();
 	}
@@ -166,16 +166,16 @@ public class BlogService {
 		return uriString;
 	}
 	
-	public static Post json2Post(String json) throws JsonParseException, IOException {
+	public static Place json2Place(String json) throws JsonParseException, IOException {
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		NewPostPayload creation = mapper.readValue(json, NewPostPayload.class);
 		if (!creation.isValid()) {
 			return null;
 		} else {
-			Post p = new Post();
+			Place p = new Place();
 			p.setTitle(creation.getTitle());
-			p.setContent(creation.getContent());
+			p.setDescription(creation.getDescription());
 			p.setCategories(creation.getCategories());
 			return p;
 		}

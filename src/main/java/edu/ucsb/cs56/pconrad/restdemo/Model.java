@@ -34,7 +34,7 @@ import com.mongodb.client.FindIterable;
 
 import static com.mongodb.client.model.Filters.eq;
 
-// In a real application you may want to use a DB, for this example we just store the posts in memory
+// In a real application you may want to use a DB, for this example we just store the places in memory
 
 public class Model {
 
@@ -46,7 +46,7 @@ public class Model {
     private MongoClient client;
     private MongoDatabase db;
 
-	private MongoCollection<Document> postCollection;
+	private MongoCollection<Document> placeCollection;
 	
 	public Model (String uriString) {
 		log.debug("Connecting to MongoDB using uriString="+uriString);
@@ -55,8 +55,8 @@ public class Model {
 		this.db = client.getDatabase(uri.getDatabase());
 		log.debug("Connected to MongoDB, db="+this.db+" client="+this.client);
 
-		// get a handle to the "posts" collection
-        postCollection = this.db.getCollection("posts");
+		// get a handle to the "places" collection
+        placeCollection = this.db.getCollection("places");
 		
 	}
     
@@ -76,41 +76,41 @@ public class Model {
     // document.put("name","Sarah C.");
     // collection.insert(document); // insert first doc
 
-	public int createPost(Post p) throws Exception {
-		return createPost(p.getTitle(),p.getContent(),p.getCategories());
+	public int createPlace(Place p) throws Exception {
+		return createPlace(p.getTitle(),p.getDescription(),p.getCategories());
 	}
 
-	public int createPost(String title, String content, List categories) throws Exception {
+	public int createPlace(String title, String description, List categories) throws Exception {
 		
-		int id  = getNextSequence("postId");
+		int id  = getNextSequence("placeId");
 		System.out.println("\n\n\n\n\n******* nextSeq = " + id + "************\n\n\n\n\n");
 		
-		Post post = new Post();
-		post.setId(id);
-		post.setTitle(title);
-		post.setContent(content);
-		post.setCategories(categories);
-		String json = BlogService.dataToJson(post);
+		Place place = new Place();
+		place.setId(id);
+		place.setTitle(title);
+		place.setDescription(description);
+		place.setCategories(categories);
+		String json = BlogService.dataToJson(place);
 		System.out.println("\n\n\n\n\n******* json = " + json + "************\n\n\n\n\\n");
-		postCollection.insertOne(Document.parse(json));
+		placeCollection.insertOne(Document.parse(json));
 		
 		return id;
     }
     
-    public List<Post> getAllPosts(){
+    public List<Place> getAllPlaces(){
 
-		List<Post> result = new ArrayList<Post>();
+		List<Place> result = new ArrayList<Place>();
 		
-		FindIterable<Document> docsFound = postCollection.find();
+		FindIterable<Document> docsFound = placeCollection.find();
 
 		for (Document cur : docsFound) {
 			try {
 				String json = cur.toJson();
 				log.debug("\n\n\n\n\ncur.toJson()="+json);
-				Post p = BlogService.json2Post(json);
+				Place p = BlogService.json2Place(json);
 				int id = cur.getInteger("id");
 				p.setId(id);
-				log.debug("Post p="+p);				
+				log.debug("Place p="+p);				
 				result.add(p);				
 			} catch (Exception e ) {
 				log.error("Exception="+e);
@@ -120,15 +120,15 @@ public class Model {
 		return result;
     }
 
-    public Post getPost(String id){
-		log.debug("****** getPost with id=" + id);
-		Post result = null;
+    public Place getPlace(String id){
+		log.debug("****** getPlace with id=" + id);
+		Place result = null;
 
 		try {
-			Document cur=postCollection.find(eq("id", Integer.parseInt(id))).first();
+			Document cur=placeCollection.find(eq("id", Integer.parseInt(id))).first();
 		
 			String json = cur.toJson();
-			result = BlogService.json2Post(json);
+			result = BlogService.json2Place(json);
 			int id_ = cur.getInteger("id");
 			result.setId(id_);
 		} catch (Exception e ) {
@@ -137,37 +137,37 @@ public class Model {
 		return result;
     }
 
-	public Post doc2Post(Document d) {
-		Post post = null;
+	public Place doc2Place(Document d) {
+		Place place = null;
 		try {
 			String json = d.toJson();
-			post = BlogService.json2Post(json);			
+			place = BlogService.json2Place(json);			
 			int id_ = d.getInteger("id");
-			post.setId(id_);
+			place.setId(id_);
 		} catch (Exception e) {
 			log.debug("ERROR: " + e.toString());
 		}
-		return post;
+		return place;
 	}
 	
-    public PostUpdateResult updatePost(String id, Post newPost){
-		log.debug("****** updatePost with id=" + id);
-		PostUpdateResult result = null;
+    public PlaceUpdateResult updatePlace(String id, Place newPlace){
+		log.debug("****** updatePlace with id=" + id);
+		PlaceUpdateResult result = null;
 
 		try {
-			newPost.setId(Integer.parseInt(id));
+			newPlace.setId(Integer.parseInt(id));
 			Document replacementDocument =
-				Document.parse(BlogService.dataToJson(newPost));
+				Document.parse(BlogService.dataToJson(newPlace));
 			FindOneAndReplaceOptions options =
 				new FindOneAndReplaceOptions().returnDocument(AFTER);
 			Document oldDocument =
-				postCollection.find(eq("id", Integer.parseInt(id))).first();
+				placeCollection.find(eq("id", Integer.parseInt(id))).first();
 
 			Document newDocument =
-				postCollection.findOneAndReplace(eq("id", Integer.parseInt(id)),
+				placeCollection.findOneAndReplace(eq("id", Integer.parseInt(id)),
 												 replacementDocument,
 												 options);
-			result = new PostUpdateResult(doc2Post(oldDocument),doc2Post(newDocument));
+			result = new PlaceUpdateResult(doc2Place(oldDocument),doc2Place(newDocument));
 			
 		} catch (Exception e ) {
 			log.error("Exception="+e);
@@ -176,22 +176,22 @@ public class Model {
     }
 
 	@lombok.Data
-	public static class PostUpdateResult {
-		private Post before;
-		private Post after;
-		public PostUpdateResult(Post before, Post after) {
+	public static class PlaceUpdateResult {
+		private Place before;
+		private Place after;
+		public PlaceUpdateResult(Place before, Place after) {
 			this.before = before;
 			this.after = after;
 		}
 	}
 	
-    public boolean deletePost(String id){
-		log.debug("****** deletePost with id=" + id);
+    public boolean deletePlace(String id){
+		log.debug("****** deletePlace with id=" + id);
 		boolean result = false;
 
 		try {
 			Document cur=
-				postCollection.findOneAndDelete(eq("id", Integer.parseInt(id)));
+				placeCollection.findOneAndDelete(eq("id", Integer.parseInt(id)));
 			result = (cur!=null);
 		} catch (Exception e ) {
 			log.error("Exception="+e);

@@ -17,7 +17,7 @@ class NewPostPayload {
 	private int id;
     private String title;
     private List categories = new LinkedList<>();
-    private String content;
+    private String description;
     
     public boolean isValid() {
 	return title != null && !title.isEmpty() && !categories.isEmpty();
